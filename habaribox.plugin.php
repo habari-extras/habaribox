@@ -66,6 +66,7 @@ class HabariBox extends Plugin
 		if(isset( $list[$post->slug] ) )
 		{
 			// handle the post if it already exists
+			$this->api->update_file( $post->slug, $post->content );
 		}
 		else
 		{
