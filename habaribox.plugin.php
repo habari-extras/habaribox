@@ -61,16 +61,14 @@ class HabariBox extends Plugin
 	 **/
 	public function action_form_publish( $form, $post, $context )
 	{
-		if( !$this->create_api() )
+		if( !$this->create_api() || $post->id == 0 )
 		{
 			return;
 		}
-		
-		// Utils::debug( $context );
-		
+				
 		Cache::expire( array('habaribox', $post->slug ) );
 		
-		$form->content->value = $this->api->get_file_contents( $post->slug );
+		// $form->content->value = $this->api->get_file_contents( $post->slug );
 	}
 	
 	/**
@@ -78,7 +76,7 @@ class HabariBox extends Plugin
 	 **/
 	public function filter_post_content( $content, $post )
 	{
-		if( !$this->create_api() )
+		if( !$this->create_api() || $post->id == 0 )
 		{
 			return $content;
 		}
