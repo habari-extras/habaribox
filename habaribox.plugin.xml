@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<pluggable type="plugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://schemas.habariproject.org/pluggable/0.8">
+	<name>HabariBox</name> 
+	<license url="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Software License 2.0</license> 
+	
+	<author url="http://morgante.net/">Morgante Pell</author> 
+	<author url="http://habariproject.org/">The Habari Community</author>
+	<version>0.1</version> 
+	<url>http://lab.morgante.net/habaribox</url> 
+	<description><![CDATA[This plugin allows posts to be synced with Dropbox, providing an easy way to edit them anywhere.]]></description> 
+	<copyright>2012</copyright> 
+</pluggable>
