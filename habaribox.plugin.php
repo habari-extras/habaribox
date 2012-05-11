@@ -13,9 +13,7 @@ class HabariBox extends Plugin
 		{
 			$yes = false;
 		}
-		
-		$yes = false;
-				
+						
 		return $yes;
 	}
 	
@@ -59,6 +57,23 @@ class HabariBox extends Plugin
 	}
 	
 	/**
+	 * Expire the cache when you go to edit a specific post
+	 **/
+	public function action_form_publish( $form, $post, $context )
+	{
+		if( !$this->create_api() )
+		{
+			return;
+		}
+		
+		// Utils::debug( $context );
+		
+		Cache::expire( array('habaribox', $post->slug ) );
+		
+		$form->content->value = $this->api->get_file_contents( $post->slug );
+	}
+	
+	/**
 	 * Update the Habari post with the Dropbox contents 
 	 **/
 	public function filter_post_content( $content, $post )
@@ -68,8 +83,15 @@ class HabariBox extends Plugin
 			return $content;
 		}
 		
-		// we should probably do some caching	
-		$file_content = $this->api->get_file_contents( $post->slug );
+		if( Cache::has( array('habaribox', $post->slug ) ) )
+		{
+			$file_content = Cache::get( array('habaribox', $post->slug ) );
+		}
+		else
+		{
+			$file_content = $this->api->get_file_contents( $post->slug );
+			Cache::set( array('habaribox', $post->slug ), $file_content );
+		}
 		
 		if( $content != $file_content )
 		{			
