@@ -5,17 +5,32 @@ class HabariBox extends Plugin
 	
 	public function action_init()
 	{
-		// $this->check_posts();
+		if( !$this->is_initiated() )
+		{
+			$this->check_posts();
+		}
+	}
+	
+	public function action_plugin_activation( $file )
+	{
+		if ( $file == str_replace( '\\','/', $this->get_file() ) ) {
+			$this->check_posts(); // this will likely take some time, should possibly be queued
+		}
 	}
 	
 	/**
 	 * Update the Dropbox copy when contents are changed in Habari 
 	 **/
-	public function action_post_update_before( $post )
+	public function action_post_update_content( $post, $original_content, $new_content )
 	{
-		$this->create_api();
+		if( !$this->create_api() )
+		{
+			return;
+		}
 		
-		$this->api->update_file( $post->slug, $post->content );
+		// Utils::debug( $post->slug, $original_content, $new_content );
+				
+		$this->api->update_file( $post->slug, $new_content );
 
 	}
 	
@@ -24,7 +39,10 @@ class HabariBox extends Plugin
 	 **/
 	public function filter_post_content( $content, $post )
 	{
-		$this->create_api();
+		if( !$this->create_api() )
+		{
+			return;
+		}
 		
 		// we should probably do some caching	
 		$file_content = $this->api->get_file_contents( $post->slug );
@@ -52,6 +70,8 @@ class HabariBox extends Plugin
 		{
 			$this->check_post( $post );
 		}
+		
+		Options::set('habaribox__initiated', true);
 	}
 	
 	/**
@@ -63,10 +83,12 @@ class HabariBox extends Plugin
 		
 		$list = $this->api->get_directory();
 		
+		// Utils::debug( $list );
+		
 		if(isset( $list[$post->slug] ) )
 		{
 			// handle the post if it already exists
-			$this->api->update_file( $post->slug, $post->content );
+			// $this->api->update_file( $post->slug, $post->content );
 		}
 		else
 		{
@@ -76,6 +98,21 @@ class HabariBox extends Plugin
 			
 		}
 		
+	}
+	
+	/**
+	 * Check that we've initiated all posts before doing anything else 
+	 **/
+	private function is_initiated()
+	{
+		$yes = true;
+		
+		if( Options::get('habaribox__initiated') == (null || false ) )
+		{
+			$yes = false;
+		}
+				
+		return $yes;
 	}
 	
 	/**
@@ -91,6 +128,8 @@ class HabariBox extends Plugin
 			$secret = 'nu12ovzjfepjhby';
 			$this->api = new DropboxAPI( $sdk_base, $base_dir, $key, $secret);
 		}
+		
+		return $this->is_initiated();
 	}
 		
 }
@@ -180,8 +219,7 @@ class DropboxAPI
 	
 	public function update_file( $name, $contents, $extension = 'html', $path = '' )
 	{
-		return $this->create_file( $name, $contents, $extension, $path );
-		
+		return $this->create_file( $name, $contents, $extension, $path );	
 	}
 	
 	public function create_file( $name, $contents, $extension = 'html', $path = '' )
@@ -192,6 +230,8 @@ class DropboxAPI
 		// Utils::debug( $data, $contents );
 		
 		file_put_contents($tmp, $data);
+		
+		// Utils::debug( $this->base_dir . $path . $name . '.' . $extension );
 
 		// Upload the file with an alternative filename
 		$put = $this->dropbox->putFile($tmp, $this->base_dir . $path . $name . '.' . $extension);
