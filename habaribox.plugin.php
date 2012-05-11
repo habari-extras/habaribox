@@ -2,6 +2,30 @@
 
 class HabariBox extends Plugin
 {
+	/**
+	 * Check that we've initiated all posts before doing anything else 
+	 **/
+	private function is_initiated()
+	{
+		$yes = true;
+		
+		if( Options::get('habaribox__initiated') == (null || false ) )
+		{
+			$yes = false;
+		}
+		
+		$yes = false;
+				
+		return $yes;
+	}
+	
+	/**
+	 * gets the name of the directory to store posts in 
+	 **/
+	private function get_storage_directory()
+	{
+		return Utils::slugify( Options::get('title') );
+	}
 	
 	public function action_init()
 	{
@@ -41,7 +65,7 @@ class HabariBox extends Plugin
 	{
 		if( !$this->create_api() )
 		{
-			return;
+			return $content;
 		}
 		
 		// we should probably do some caching	
@@ -62,10 +86,19 @@ class HabariBox extends Plugin
 	 **/
 	private function check_posts()
 	{
+		$this->create_api();
+		
 		$posts = Posts::get( array( 'nolimit' => true ) );
 		
 		// $posts = array( $posts[0] ); // for testing, just use first post
 		
+		$base_dir_contents = $this->api->get_directory('', false);
+		
+		if( !isset( $base_dir_contents[ $this->get_storage_directory() ] ) )
+		{
+			$this->api->create_folder( $this->get_storage_directory() );
+		}
+				
 		foreach( $posts as $post )
 		{
 			$this->check_post( $post );
@@ -101,28 +134,13 @@ class HabariBox extends Plugin
 	}
 	
 	/**
-	 * Check that we've initiated all posts before doing anything else 
-	 **/
-	private function is_initiated()
-	{
-		$yes = true;
-		
-		if( Options::get('habaribox__initiated') == (null || false ) )
-		{
-			$yes = false;
-		}
-				
-		return $yes;
-	}
-	
-	/**
 	 * Creates a DropBox API object if one doesn't already exist 
 	 **/
 	private function create_api()
 	{
 		if( !isset( $this->api ) )
 		{
-			$base_dir = '';
+			$base_dir = $this->get_storage_directory() . '/';
 			$sdk_base = dirname( $this->get_file() ) . '/dropbox-library/Dropbox/';
 			$key = '91x3fmog7f0dng1';
 			$secret = 'nu12ovzjfepjhby';
@@ -179,18 +197,30 @@ class DropboxAPI
 		return $this->dropbox->accountInfo();
 	}
 	
-	public function get_directory( $path = '' )
+	public function get_directory( $path = '', $base_dir = true )
 	{
+		if( $base_dir == true )
+		{
+			$path = $this->base_dir . $path;
+		}
+				
 		$data = $this->get_metadata( $path );
 		
 		$contents = $data['body']->contents;
-				
-		return $contents;
+		
+		$list = array();
+		
+		foreach( $contents as $content )
+		{
+			$list[ Utils::slugify($content->path) ] = $content;
+		}
+			
+		return $list;
 	}
 	
 	public function get_metadata( $path = '')
 	{
-		$path = $this->base_dir . $path;
+		$path = $path;
 		
 		$data = $this->dropbox->metaData($path);
 				
@@ -232,13 +262,20 @@ class DropboxAPI
 		file_put_contents($tmp, $data);
 		
 		// Utils::debug( $this->base_dir . $path . $name . '.' . $extension );
-
+		
+		// Utils::debug( $this->base_dir . $path . $name . '.' . $extension );
+		
 		// Upload the file with an alternative filename
-		$put = $this->dropbox->putFile($tmp, $this->base_dir . $path . $name . '.' . $extension);
+		$put = $this->dropbox->putFile($tmp, $name . '.' . $extension, $this->base_dir . $path);
 
 		// Unlink the temporary file
 		unlink($tmp);
 		
+	}
+	
+	public function create_folder( $path )
+	{
+		$this->dropbox->create( $path );
 	}
 	
 }
