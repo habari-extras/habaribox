@@ -1,0 +1,3 @@
+[submodule "dropbox-library"]
+	path = dropbox-library
+	url = https://github.com/BenTheDesigner/Dropbox.git
