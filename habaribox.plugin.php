@@ -31,6 +31,8 @@ class HabariBox extends Plugin
 		{
 			$this->check_posts();
 		}
+		
+		$this->evaluate_posts();
 	}
 	
 	public function action_plugin_activation( $file )
@@ -49,7 +51,7 @@ class HabariBox extends Plugin
 		{
 			return;
 		}
-		
+				
 		// Utils::debug( $post->slug, $original_content, $new_content );
 				
 		$this->api->update_file( $post->slug, $new_content );
@@ -65,7 +67,9 @@ class HabariBox extends Plugin
 		{
 			return;
 		}
-				
+		
+		
+		
 		Cache::expire( array('habaribox', $post->slug ) );
 		
 		// $form->content->value = $this->api->get_file_contents( $post->slug );
@@ -73,34 +77,67 @@ class HabariBox extends Plugin
 	
 	/**
 	 * Update the Habari post with the Dropbox contents 
+	 * 
+	 * This has been replaced with evaluate_posts()
 	 **/
-	public function filter_post_content( $content, $post )
+	// public function filter_post_content( $content, $post )
+	// {
+	// 	if( !$this->create_api() || $post->id == 0 )
+	// 	{
+	// 		return $content;
+	// 	}
+	// 			
+	// 	// Utils::debug( $post->id );
+	// 	
+	// 	if( Cache::has( array('habaribox', $post->slug ) ) )
+	// 	{
+	// 		return Cache::get( array('habaribox', $post->slug ) );
+	// 	}
+	// 	else
+	// 	{
+	// 		$file_content = $this->api->get_file_contents( $post->slug );
+	// 		Cache::set( array('habaribox', $post->slug ), $file_content );
+	// 	}
+	// 	
+	// 	if( $content != $file_content )
+	// 	{			
+	// 		$content = $file_content;
+	// 		$post->content = $file_content;
+	// 		$post->update();
+	// 	}
+	// 
+	// 	return $content;
+	// }
+	
+	private function update_habari_content( $post )
 	{
-		if( !$this->create_api() || $post->id == 0 )
+		$file_content = $this->api->get_file_contents( $post->slug );
+		Cache::set( array('habaribox', $post->slug ), $file_content );
+		
+		$post->content = $file_content;
+		$post->update();
+	}
+	
+	/**
+	 * Evaluate the synced status of posts 
+	 **/
+	public function evaluate_posts()
+	{
+		if( !$this->create_api() )
 		{
-			return $content;
+			return;
 		}
+		
+		$dropbox_posts = $this->api->get_directory( $this->get_storage_directory(), false );
+		$habari_posts = Posts::get( array('nolimit' => true ) );
 				
-		// Utils::debug( $post->id );
-		
-		if( Cache::has( array('habaribox', $post->slug ) ) )
+		foreach( $habari_posts as $post )
 		{
-			$file_content = Cache::get( array('habaribox', $post->slug ) );
-		}
-		else
-		{
-			$file_content = $this->api->get_file_contents( $post->slug );
-			Cache::set( array('habaribox', $post->slug ), $file_content );
+			// Utils::debug($dropbox_posts);
+			$this->check_post( $post, $dropbox_posts[$post->slug] );
 		}
 		
-		if( $content != $file_content )
-		{			
-			$content = $file_content;
-			$post->content = $file_content;
-			$post->update();
-		}
-
-		return $content;
+		// Utils::debug( $directory );
 	}
 	
 	/**
@@ -137,25 +174,40 @@ class HabariBox extends Plugin
 	/**
 	 * Checks a posts for its DropBox status and creates/updates the DropBox file if necessary 
 	 **/
-	private function check_post( $post, $overwrite = false )
+	private function check_post( $post, $meta = null )
 	{
 		$this->create_api();
 		
-		$list = $this->api->get_directory();
-		
-		// Utils::debug( $list );
-		
-		if(isset( $list[$post->slug] ) )
+		if( $meta == null )
 		{
-			// handle the post if it already exists
-			// $this->api->update_file( $post->slug, $post->content );
+			$list = $this->api->get_directory();
+
+			// Utils::debug( $list );
+
+			if(isset( $list[$post->slug] ) )
+			{
+				// handle the post if it already exists
+				// $this->api->update_file( $post->slug, $post->content );
+			}
+			else
+			{
+				// Utils::debug( $post );
+
+				$this->api->create_file( $post->slug, $post->content );
+
+			}
 		}
 		else
 		{
-			// Utils::debug( $post );
+			$dropbox_date = HabariDateTime::date_create( $meta->modified );
+			$time_diff = HabariDateTime::difference( $dropbox_date, $post->modified );
 			
-			$this->api->create_file( $post->slug, $post->content );
-			
+			if( $time_diff['invert'] != true && $time_diff['s'] > 0)
+			{
+				// our copy is out of sync
+				$this->update_habari_content( $post );
+				// Utils::debug( $time_diff, $dropbox_date, $post->modified, $post );
+			}
 		}
 		
 	}
@@ -229,8 +281,8 @@ class HabariBox extends Plugin
 		$this->create_api( true );
 		Session::notice( 'Authorization tokens have been successfully set.' );
 	}
+
 	
-		
 }
 
 class DropboxAPI
@@ -304,7 +356,10 @@ class DropboxAPI
 		
 		foreach( $contents as $content )
 		{
-			$list[ Utils::slugify($content->path) ] = $content;
+			
+			$path = pathinfo( $content->path );
+			
+			$list[ Utils::slugify( $path['filename'] ) ] = $content;
 		}
 			
 		return $list;
