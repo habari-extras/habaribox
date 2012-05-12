@@ -80,7 +80,7 @@ class HabariBox extends Plugin
 		{
 			return $content;
 		}
-		
+				
 		// Utils::debug( $post->id );
 		
 		if( Cache::has( array('habaribox', $post->slug ) ) )
@@ -132,7 +132,7 @@ class HabariBox extends Plugin
 	/**
 	 * Checks a posts for its DropBox status and creates/updates the DropBox file if necessary 
 	 **/
-	private function check_post( $post )
+	private function check_post( $post, $overwrite = false )
 	{
 		$this->create_api();
 		
@@ -158,19 +158,73 @@ class HabariBox extends Plugin
 	/**
 	 * Creates a DropBox API object if one doesn't already exist 
 	 **/
-	private function create_api()
+	private function create_api( $create_token = false )
 	{
+		
+		if( Options::get('habaribox__oauth-token') == null && $create_token == false )
+		{
+			return false;
+		}
+		
 		if( !isset( $this->api ) )
 		{
 			$base_dir = $this->get_storage_directory() . '/';
 			$sdk_base = dirname( $this->get_file() ) . '/dropbox-library/Dropbox/';
 			$key = '91x3fmog7f0dng1';
 			$secret = 'nu12ovzjfepjhby';
-			$this->api = new DropboxAPI( $sdk_base, $base_dir, $key, $secret);
+			
+			if( Options::get('habaribox__oauth-token') != null && $create_token == false )
+			{
+				$session = new stdClass;
+				$session->oauth_token_secret = Options::get('habaribox__oauth-secret');
+				$session->oauth_token = Options::get('habaribox__oauth-token');
+				$session->uid = Options::get('habaribox__oauth-uid');
+			}
+			else
+			{
+				$session = null;
+			}
+			
+			// $session = null;
+						
+			$this->api = new DropboxAPI( $sdk_base, $base_dir, $key, $secret, $session);
+		}
+		
+		if( $create_token )
+		{
+			$token_class = $this->api->get_token();
+			Options::set( 'habaribox__oauth-token', $token_class->oauth_token);
+			Options::set( 'habaribox__oauth-secret', $token_class->oauth_token_secret);
+			Options::set( 'habaribox__oauth-uid', $token_class->uid);
 		}
 		
 		return $this->is_initiated();
 	}
+	
+	public function filter_plugin_config( $actions )
+	{
+		$actions['configure'] = _t('Configure');
+		$actions['authorize'] = _t('Authorize');
+		return $actions;
+	}
+	
+	public function action_plugin_ui_configure()
+	{
+		$ui = new FormUI( strtolower( get_class( $this ) ) );
+		$secret = $ui->append( 'text', 'oauth-secret', 'habaribox__oauth-secret', _t('OAuth Secret:') );
+		$token = $ui->append( 'text', 'oauth-token', 'habaribox__oauth-token', _t('OAuth Token:') );
+		$uid = $ui->append( 'text', 'oauth-uid', 'habaribox__oauth-uid', _t('OAuth UID:') );
+		
+		$ui->append('submit', 'save', _t('Save'));
+		$ui->out();
+	}
+	
+	public function action_plugin_ui_authorize()
+	{
+		$this->create_api( true );
+		Session::notice( 'Authorization tokens have been successfully set.' );
+	}
+	
 		
 }
 
@@ -180,7 +234,7 @@ class DropboxAPI
 	private $key;
 	private $secret;
 		
-	public function __construct( $sdk_base, $directory, $key, $secret )
+	public function __construct( $sdk_base, $directory, $key, $secret, $session = null )
 	{
 		$this->base_dir = $directory;
 		$this->sdk_base = $sdk_base;
@@ -208,10 +262,24 @@ class DropboxAPI
 		
 		// Instantiate the required Dropbox objects
 		$this->encrypter = new \Dropbox\OAuth\Storage\Encrypter('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+		
 		$this->storage = new \Dropbox\OAuth\Storage\Session($this->encrypter);
+		$token = unserialize('O:8:"stdClass":3:{s:18:"oauth_token_secret";s:15:"plgkp7jofm2kfl8";s:11:"oauth_token";s:15:"bjjuh58yqn071b7";s:3:"uid";s:6:"190441";}');
+		// $token->oauth_token = 'bjjuh58yqn071b7';
+		// $this->storage->set( $token, 'access_token' );
+		if( $session != null )
+		{
+			// Utils::debug( $session, $token );
+			
+			$this->storage->set( $session, 'access_token' );
+		}
+		// // 
 		$this->OAuth = new \Dropbox\OAuth\Consumer\Curl($this->key, $this->secret, $this->storage, $this->callback);
+		
 		$this->dropbox = new \Dropbox\API($this->OAuth);
 	}
+	
+	
 	
 	public function get_account_info()
 	{
@@ -298,6 +366,11 @@ class DropboxAPI
 	public function create_folder( $path )
 	{
 		$this->dropbox->create( $path );
+	}
+	
+	public function get_token( $type = 'access_token' )
+	{
+		return $this->storage->get( $type );
 	}
 	
 }
