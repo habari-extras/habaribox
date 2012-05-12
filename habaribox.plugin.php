@@ -108,7 +108,10 @@ class HabariBox extends Plugin
 	 **/
 	private function check_posts()
 	{
-		$this->create_api();
+		if( !$this->create_api() )
+		{
+			return;
+		}
 		
 		$posts = Posts::get( array( 'nolimit' => true ) );
 		
