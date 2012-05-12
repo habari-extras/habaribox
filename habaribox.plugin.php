@@ -108,7 +108,7 @@ class HabariBox extends Plugin
 	 **/
 	private function check_posts()
 	{
-		if( !$this->create_api() )
+		if( Options::get('habaribox__oauth-token') == false )
 		{
 			return;
 		}
@@ -267,9 +267,6 @@ class DropboxAPI
 		$this->encrypter = new \Dropbox\OAuth\Storage\Encrypter('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
 		
 		$this->storage = new \Dropbox\OAuth\Storage\Session($this->encrypter);
-		$token = unserialize('O:8:"stdClass":3:{s:18:"oauth_token_secret";s:15:"plgkp7jofm2kfl8";s:11:"oauth_token";s:15:"bjjuh58yqn071b7";s:3:"uid";s:6:"190441";}');
-		// $token->oauth_token = 'bjjuh58yqn071b7';
-		// $this->storage->set( $token, 'access_token' );
 		if( $session != null )
 		{
 			// Utils::debug( $session, $token );
