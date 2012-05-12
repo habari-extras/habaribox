@@ -207,10 +207,10 @@ class DropboxAPI
 		require_once( $this->sdk_base . '/API.php');
 		
 		// Instantiate the required Dropbox objects
-		// $this->encrypter = new Dropbox\OAuth\Storage\Encrypter('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-		// $this->storage = new Dropbox\OAuth\Storage\Session($this->encrypter);
-		// $this->OAuth = new Dropbox\OAuth\Consumer\Curl($this->key, $this->secret, $this->storage, $this->callback);
-		// $this->dropbox = new Dropbox\API($this->OAuth);
+		$this->encrypter = new \Dropbox\OAuth\Storage\Encrypter('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+		$this->storage = new \Dropbox\OAuth\Storage\Session($this->encrypter);
+		$this->OAuth = new \Dropbox\OAuth\Consumer\Curl($this->key, $this->secret, $this->storage, $this->callback);
+		$this->dropbox = new \Dropbox\API($this->OAuth);
 	}
 	
 	public function get_account_info()
