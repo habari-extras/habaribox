@@ -113,6 +113,8 @@ class HabariBox extends Plugin
 			return;
 		}
 		
+		$this->create_api();
+		
 		$posts = Posts::get( array( 'nolimit' => true ) );
 		
 		// $posts = array( $posts[0] ); // for testing, just use first post
