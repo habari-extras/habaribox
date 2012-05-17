@@ -687,7 +687,7 @@ class HabariBox extends Plugin implements MediaSilo
 		if ( $title == '' ) {
 			$title = basename( $path );
 		}
-		return '<a href="#" onclick="habari.media.showdir(\''.$path.'\');return false;">' . $title . '</a>';
+		return '<a href="#" onclick="habari.media.fullReload();habari.media.showdir(\''.$path.'\');return false;">' . $title . '</a>';
 	}
 
 	/**
@@ -718,6 +718,7 @@ class HabariBox extends Plugin implements MediaSilo
 	{
 		$class = __CLASS__;
 		if ( $silo instanceof $class ) {
+			$controls[] = $this->link_path( self::SILO_NAME . '/Public', _t( 'Public' ) );
 			$controls[] = $this->link_path( self::SILO_NAME . '/' . $path, _t( 'Browse' ) );
 			// if ( User::identify()->can( 'upload_media' ) ) {
 			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'upload', _t( 'Upload' ) );
@@ -731,43 +732,10 @@ class HabariBox extends Plugin implements MediaSilo
 		}
 		return $controls;
 	}
-	
-	}
 
 	private function is_auth()
 	{
 		return $this->show_media_silo();
-	}
-
-	/**
-	 * Provide controls for the media control bar
-	 *
-	 * @param array $controls Incoming controls from other plugins
-	 * @param MediaSilo $silo An instance of a MediaSilo
-	 * @param string $path The path to get controls for
-	 * @param string $panelname The name of the requested panel, if none then emptystring
-	 * @return array The altered $controls array with new (or removed) controls
-	 *
-	 * @todo This should really use FormUI, but FormUI needs a way to submit forms via ajax
-	 */
-	public function filter_media_controls( $controls, $silo, $path, $panelname )
-	{
-		$class = __CLASS__;
-		if ( $silo instanceof $class ) {
-			unset( $controls['root'] );
-			// $search_criteria = isset( $_SESSION['flickrsearch'] ) ? htmlentities( $_SESSION['flickrsearch'] ) : '';
-			// $controls['search']= '<label for="flickrsearch" class="incontent">' ._t( 'Search' ) . '</label><input type="search" id="flickrsearch" placeholder="'. _t( 'Search for photos' ) .'" value="'.$search_criteria.'">
-			// 		<script type="text/javascript">
-			// 		$(\'#flickrsearch\').keypress(function(e){
-			// 			if (e.which == 13){
-			// 				habari.media.fullReload();
-			// 				habari.media.showdir(\''.FlickrSilo::SILO_NAME.'/$search/\' + $(this).val());
-			// 				return false;
-			// 			}
-			// 		});
-			// 		</script>';
-		}
-		return $controls;
 	}
 
 }
