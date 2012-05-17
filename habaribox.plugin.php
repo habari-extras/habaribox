@@ -675,64 +675,63 @@ class HabariBox extends Plugin implements MediaSilo
 		echo 'jim';
 	}
 	
-	public function action_admin_footer( $theme ) 
+	/**
+	 * Produce a link for the media control bar that causes a specific path to be displayed
+	 *
+	 * @param string $path The path to display
+	 * @param string $title The text to use for the link in the control bar
+	 * @return string The link to create
+	 */
+	public function link_path( $path, $title = '' )
 	{
-		if ( Controller::get_var( 'page' ) == 'publish' ) {
-			$size = Options::get( 'flickrsilo__flickr_size' );
-			switch ( $size ) {
-				case '_s':
-					$vsizex = 75;
-					break;
-				case '_t':
-					$vsizex = 100;
-					break;
-				case '_m':
-					$vsizex = 240;
-					break;
-				case '':
-					$vsizex = 500;
-					break;
-				case '_b':
-					$vsizex = 1024;
-					break;
-				case '_o':
-					$vsizex = 400;
-					break;
-			}
-			$vsizey = intval( $vsizex/4*3 );
-
-			// Translation strings for used in embedding Javascript.  This is quite messy, but it leads to cleaner code than doing it inline.
-			$embed_photo = _t( 'embed_photo' );
-			$embed_video = _t( 'embed_video' );
-			$thumbnail = _t( 'thumbnail' );
-			$title = _t( 'Open in new window' );
-
-			echo <<< FLICKR
-			<script type="text/javascript">
-				habari.media.output.flickr = {
-					{$embed_photo}: function(fileindex, fileobj) {
-						habari.editor.insertSelection('<a href="' + fileobj.flickr_url + '"><img alt="' + fileobj.title + '" src="' + fileobj.url + '"></a>');
-					}
-				}
-				habari.media.output.flickrvideo = {
-					{$embed_video}: function(fileindex, fileobj) {
-						habari.editor.insertSelection('<object type="application/x-shockwave-flash" width="{$vsizex}" height="{$vsizey}" data="http://www.flickr.com/apps/video/stewart.swf?v=49235" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="intl_lang=en-us&amp;photo_secret=' + fileobj.secret + '&amp;photo_id=' + fileobj.id + '&amp;show_info_box=true"></param> <param name="movie" value="http://www.flickr.com/apps/video/stewart.swf?v=49235"></param> <param name="bgcolor" value="#000000"></param> <param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="http://www.flickr.com/apps/video/stewart.swf?v=49235" bgcolor="#000000" allowfullscreen="true" flashvars="intl_lang=en-us&amp;photo_secret=' + fileobj.secret + '&amp;photo_id=' + fileobj.id + '&amp;flickr_show_info_box=true" height="{$vsizey}" width="{$vsizex}"></embed></object>');
-					},
-					{$thumbnail}: function(fileindex, fileobj) {
-						habari.editor.insertSelection('<a href="' + fileobj.flickr_url + '"><img alt="' + fileobj.title + '" src="' + fileobj.url + '"></a>');
-					}
-				}
-				habari.media.preview.flickr = function(fileindex, fileobj) {
-					var stats = '';
-					return '<div class="mediatitle"><a href="' + fileobj.flickr_url + '" class="medialink" onclick="$(this).attr(\'target\',\'_blank\');" title="{$title}">media</a>' + fileobj.title + '</div><img src="' + fileobj.thumbnail_url + '"><div class="mediastats"> ' + stats + '</div>';
-				}
-				habari.media.preview.flickrvideo = function(fileindex, fileobj) {
-					var stats = '';
-					return '<div class="mediatitle"><a href="' + fileobj.flickr_url + '" class="medialink" onclick="$(this).attr(\'target\',\'_blank\');"title="{$title}" >media</a>' + fileobj.title + '</div><img src="' + fileobj.thumbnail_url + '"><div class="mediastats"> ' + stats + '</div>';
-				}
-			</script>
-FLICKR;
+		if ( $title == '' ) {
+			$title = basename( $path );
 		}
+		return '<a href="#" onclick="habari.media.showdir(\''.$path.'\');return false;">' . $title . '</a>';
+	}
+
+	/**
+	 * Produce a link for the media control bar that causes a specific panel to be displayed
+	 *
+	 * @param string $path The path to pass
+	 * @param string $path The panel to display
+	 * @param string $title The text to use for the link in the control bar
+	 * @return string The link to create
+	 */
+	public function link_panel( $path, $panel, $title )
+	{
+		return '<a href="#" onclick="habari.media.showpanel(\''.$path.'\', \''.$panel.'\');return false;">' . $title . '</a>';
+	}
+
+	/**
+	 * Provide controls for the media control bar
+	 *
+	 * @param array $controls Incoming controls from other plugins
+	 * @param MediaSilo $silo An instance of a MediaSilo
+	 * @param string $path The path to get controls for
+	 * @param string $panelname The name of the requested panel, if none then emptystring
+	 * @return array The altered $controls array with new (or removed) controls
+	 *
+	 * @todo This should really use FormUI, but FormUI needs a way to submit forms via ajax
+	 */
+	public function filter_media_controls( $controls, $silo, $path, $panelname )
+	{
+		$class = __CLASS__;
+		if ( $silo instanceof $class ) {
+			$controls[] = $this->link_path( self::SILO_NAME . '/' . $path, _t( 'Browse' ) );
+			// if ( User::identify()->can( 'upload_media' ) ) {
+			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'upload', _t( 'Upload' ) );
+			// }
+			// if ( User::identify()->can( 'create_directories' ) ) {
+			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'mkdir', _t( 'Create Directory' ) );
+			// }
+			// if ( User::identify()->can( 'delete_directories' ) && ( $path && self::isEmptyDir( $this->root . '/' . $path ) ) ) {
+			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'rmdir', _t( 'Delete Directory' ) );
+			// }
+		}
+		return $controls;
+	}
+	
 	}
 
 	private function is_auth()
