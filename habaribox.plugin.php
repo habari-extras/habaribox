@@ -86,16 +86,19 @@ class HabariBox extends Plugin implements MediaSilo
 		}
 		
 		Cache::expire( array('habaribox', 'dropbox_posts' ) );
-		
-		$d_post = $this->api->get_file( $post->slug );
-		
-		$form->content->value = $d_post['data'];
-		
-		// Utils::debug( $d_post );
-		
-		$form->post_links->append( 'static', 'dropbox_sync', sprintf( _t( 'Synced from Dropbox: %s' ), HabariDateTime::date_create($d_post['meta']->modified)->format() ) );
-		
+
 		$this->evaluate_posts( true ); // force a reevaluation of posts
+		
+		if( $post->id != 0 )
+		{
+			$d_post = $this->api->get_file( $post->slug );
+
+			$form->content->value = $d_post['data'];
+
+			// Utils::debug( $d_post );
+
+			$form->post_links->append( 'static', 'dropbox_sync', sprintf( _t( 'Synced from Dropbox: %s' ), HabariDateTime::date_create($d_post['meta']->modified)->format() ) );
+		}
 		
 		// Utils::debug( $post->content, $post );
 				
@@ -438,9 +441,9 @@ class HabariBox extends Plugin implements MediaSilo
 		// Utils::de
 		
 		// $path = '/Public';
-		
-		$contents = $this->api->get_directory( $path, false );
 				
+		$contents = $this->api->get_directory( $path, false );
+		
 		foreach( $contents as $item )
 		{	
 			$props = array( 'title' => basename($item->path) );
@@ -525,8 +528,7 @@ class HabariBox extends Plugin implements MediaSilo
 		// $props = array_merge( $props, self::element_props( $photo, "http://www.flickr.com/photos/{$_SESSION['nsid']}/{$photo['id']}", $size ) );
 		
 		$path = pathinfo( $meta->path );
-		
-		
+				
 		// if( $meta->thumb_exists)
 		$props['url'] = $this->silo_url( $meta->path );
 		
@@ -850,8 +852,10 @@ class DropboxAPI
 	}
 	
 	public function get_file( $name, $extension = 'html', $path = '' )
-	{
-		$data = $this->dropbox->getFile( $this->base_dir . $path . $name . '.' . $extension);
+	{		
+		// Utils::debug( $this->base_dir . $path . $name . '.' . $extension );
+		
+		$data = $this->dropbox->getFile( $this->base_dir . $path . $name . '.' . $extension );
 		
 		// Utils::debug( $data );
 		
