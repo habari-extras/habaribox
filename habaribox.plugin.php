@@ -49,7 +49,7 @@ class HabariBox extends Plugin implements MediaSilo
 		
 		$this->evaluate_posts( false );
 		
-		$this->silo_dir( '' );
+		// $this->silo_dir( '' );
 	}
 	
 	public function action_plugin_activation( $file )
@@ -535,9 +535,19 @@ class HabariBox extends Plugin implements MediaSilo
 		if( $meta->thumb_exists )
 		{
 			$props['thumbnail_url'] = $this->silo_thumbnail( $meta->path );
-		}		
+			$props['filetype'] = 'image_png';
+		}
+		else
+		{
+			$url = URL::get_from_filesystem( $this->get_file() ) . '/icons/' . $meta->icon . '48.gif';
+			
+			$props['thumbnail_url'] = $url;
+		}	
 		// if( )
 		// 
+		
+		$props['width'] = 50;
+		$props['height'] = 60;
 		
 		return $props;
 	}
