@@ -285,7 +285,7 @@ class HabariBox extends Plugin implements MediaSilo
 			
 			if( $time_diff['invert'] != true && $time_diff['s'] > 10)
 			{					
-				Utils::debug( $time_diff, $h_post );
+				// Utils::debug( $time_diff, $h_post );
 				
 				// our copy is out of sync
 				$this->update_habari_content( $h_post );
