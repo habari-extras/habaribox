@@ -80,13 +80,20 @@ class HabariBox extends Plugin implements MediaSilo
 	 **/
 	public function action_form_publish( $form, $post, $context )
 	{
-		if( !$this->create_api() || $post->id == 0 )
+		if( !$this->create_api() )
 		{
 			return;
 		}
 		
-		Cache::expire( array('habaribox', $post->slug ) );
 		Cache::expire( array('habaribox', 'dropbox_posts' ) );
+		
+		$d_post = $this->api->get_file( $post->slug );
+		
+		$form->content->value = $d_post['data'];
+		
+		// Utils::debug( $d_post );
+		
+		$form->post_links->append( 'static', 'dropbox_sync', sprintf( _t( 'Synced from Dropbox: %s' ), HabariDateTime::date_create($d_post['meta']->modified)->format() ) );
 		
 		$this->evaluate_posts( true ); // force a reevaluation of posts
 		
@@ -148,7 +155,7 @@ class HabariBox extends Plugin implements MediaSilo
 	public function evaluate_posts( $force = false)
 	{		
 		if( !Cache::has( array('habaribox', 'dropbox_posts' ) ) || $force == true ) // Only evaluate if there isn't anything in the cache
-		{
+		{			
 			if( !$this->create_api() )
 			{
 				return;
@@ -221,7 +228,7 @@ class HabariBox extends Plugin implements MediaSilo
 	private function check_post( $h_post, $meta = null )
 	{
 		$this->create_api();
-		
+				
 		if( $meta == null ) // we don't know about Dropbox, so let's check
 		{
 			$list = $this->api->get_directory();
@@ -243,6 +250,8 @@ class HabariBox extends Plugin implements MediaSilo
 		}
 		elseif( $h_post == false) // the Habari post doesn't exist so it must be created
 		{
+			// Utils::debug( $h_post, $meta );
+			
 			$user = User::identify();
 			
 			if( $user->loggedin == false )
@@ -276,6 +285,8 @@ class HabariBox extends Plugin implements MediaSilo
 			
 			if( $time_diff['invert'] != true && $time_diff['s'] > 10)
 			{					
+				Utils::debug( $time_diff, $h_post );
+				
 				// our copy is out of sync
 				$this->update_habari_content( $h_post );
 				// Utils::debug( $time_diff, $dropbox_date, $post->modified, $post );
