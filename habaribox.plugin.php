@@ -14,7 +14,7 @@ class HabariBox extends Plugin implements MediaSilo
 	 **/
 	private function show_media_silo()
 	{
-		return true; // change this later
+		return Options::get('habaribox__silo');
 	}
 	
 	/**
@@ -22,7 +22,7 @@ class HabariBox extends Plugin implements MediaSilo
 	 **/
 	private function is_initiated()
 	{
-		$yes = true;
+		$yes = Options::get('habaribox__sync');
 		
 		if( Options::get('habaribox__initiated') == (null || false ) )
 		{
@@ -139,7 +139,7 @@ class HabariBox extends Plugin implements MediaSilo
 		$post->content = $file_content;
 		$post->update();
 		
-		Utils::redirect();
+		// Utils::redirect();
 	}
 		
 	/**
@@ -184,9 +184,9 @@ class HabariBox extends Plugin implements MediaSilo
 	 **/
 	private function check_posts()
 	{
-		return; // fix this later
+		// return; // fix this later
 		
-		if( Options::get('habaribox__oauth-token') == false )
+		if( Options::get('habaribox__oauth-token') == false || !Options::get('habaribox__sync') )
 		{
 			return;
 		}
@@ -203,6 +203,7 @@ class HabariBox extends Plugin implements MediaSilo
 		
 		if( !isset( $base_dir_contents[ $this->get_storage_directory() ] ) )
 		{
+			// Utils::debug( $)
 			$this->api->create_folder( $this->get_storage_directory() );
 		}
 				
@@ -272,10 +273,9 @@ class HabariBox extends Plugin implements MediaSilo
 			$dropbox_date = HabariDateTime::date_create( $meta->modified );
 			$time_diff = HabariDateTime::difference( $dropbox_date, $h_post->modified );
 			
-			// Utils::debug( $time_diff, $meta );
 			
-			if( $time_diff['invert'] != true && $time_diff['s'] > 0)
-			{	
+			if( $time_diff['invert'] != true && $time_diff['s'] > 10)
+			{					
 				// our copy is out of sync
 				$this->update_habari_content( $h_post );
 				// Utils::debug( $time_diff, $dropbox_date, $post->modified, $post );
@@ -336,6 +336,31 @@ class HabariBox extends Plugin implements MediaSilo
 		}
 	}
 	
+	/**
+	 * Filter post content to replace links for Dropbox Public files
+	 *
+	 * For file * in the public directory, with public link #:
+	 * 	- <dP=*> is replaced with the public link to #
+	 *  - <diP=*> is replaced with <img src="#">
+	 *  - <daP=*> is replaced with <a href="#">
+	 */
+	public function filter_post_content_out( $content )
+	{	
+		$pattern = '/\<dP\=([A-Za-z0-9-.]+)\>/';
+		$replacement = 'http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . '$1';
+		$content =  preg_replace($pattern, $replacement, $content);
+		
+		$pattern = '/\<diP\=([A-Za-z0-9-.]+)\>/';
+		$replacement = '<img src="http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . '$1' . '">';
+		$content =  preg_replace($pattern, $replacement, $content);
+		
+		$pattern = '/\<daP\=([A-Za-z0-9-.]+)\>/';
+		$replacement = '<a href="http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . '$1' . '">';
+		$content =  preg_replace($pattern, $replacement, $content);
+		
+		return $content;
+	}
+	
 	public function filter_plugin_config( $actions )
 	{
 		$actions['configure'] = _t('Configure');
@@ -349,6 +374,9 @@ class HabariBox extends Plugin implements MediaSilo
 		$secret = $ui->append( 'text', 'oauth-secret', 'habaribox__oauth-secret', _t('OAuth Secret:') );
 		$token = $ui->append( 'text', 'oauth-token', 'habaribox__oauth-token', _t('OAuth Token:') );
 		$uid = $ui->append( 'text', 'oauth-uid', 'habaribox__oauth-uid', _t('OAuth UID:') );
+		
+		$sync = $ui->append( 'checkbox', 'enable-sync', 'habaribox__sync', _t('Enable sync') );
+		$silo = $ui->append( 'checkbox', 'enable-silo', 'habaribox__silo', _t('Enable silo') );
 		
 		$ui->append('submit', 'save', _t('Save'));
 		$ui->out();
@@ -525,7 +553,7 @@ class HabariBox extends Plugin implements MediaSilo
 		if( strpos( $path, '/Public' ) === 0 )
 		{
 			// path is in public folder, so quicker direct URL can be built
-			$link = 'http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . substr( $path, 8);
+			$link = $this->api->get_public_link( $path );
 		}
 		else
 		{
@@ -889,6 +917,11 @@ class DropboxAPI
 	public function get_token( $type = 'access_token' )
 	{
 		return $this->storage->get( $type );
+	}
+	
+	public function get_public_link( $path )
+	{
+		return 'http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . substr( $path, 8);
 	}
 	
 }

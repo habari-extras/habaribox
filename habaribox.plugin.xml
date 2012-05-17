@@ -7,6 +7,22 @@
 	<author url="http://habariproject.org/">The Habari Community</author>
 	<version>0.1</version> 
 	<url>http://lab.morgante.net/habaribox</url> 
-	<description><![CDATA[This plugin allows posts to be synced with Dropbox, providing an easy way to edit them anywhere.]]></description> 
+	<description><![CDATA[This plugin allows posts to be synced with Dropbox, providing an easy way to edit them anywhere. It also creates a media silo for Dropbox.]]></description> 
 	<copyright>2012</copyright> 
+	
+	<help>
+		<value><![CDATA[
+			<h2>Syncing</h2>
+			<p>Please note that this feature is experimental and you should make a backup of your site before enabling it.</p>
+			<p>When syncing is enabled, this plugin will attempt to keep a synced copy of your Habari posts in Habari. They will exist in a folder resembling your blog name existing at the root of your Dropbox. When you update or create a post, it will update or create a <code>slug.html</code> file in your Dropbox folder. Similarly, when you edit or create the html files in your blog folder on Dropbox, it will update or create the Habari posts.</p>
+			<h2>Silo</h2>
+			<p>When the silo is enabled, it will add a new silo to the post page. This silo will allow you to browse your Dropbox folder and insert links to files. Links to files in your Public directory will be linked to directly, which is good for images, while others will pass through Dropbox's interface.</p>
+			<p>There is also a filter which can be used to reference files from your Public directory.</p>
+			<ul>
+				<li><code>&lt;dP=slim.txt&gt;</code> will be replaced with <code>http://dropbox.com/u/#/slim.txt</code> (the filename of the Public file on Dropbox's server)</li>
+				<li><code>&lt;diP=slim.jpg&gt;</code> will be replaced with <code>&lt;img src="http://dropbox.com/u/#/slim.jpg"&gt;</code> (an image referencing the Public file on Dropbox)</li>
+				<li><code>&lt;daP=slim.html&gt;</code> will be replaced with <code>&lt;a href="http://dropbox.com/u/#/slim.jpg"&gt;</code> (a link to the Public file on Dropbox)</li>
+			</ul>
+		]]></value>
+	</help>
 </pluggable>
