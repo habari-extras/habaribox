@@ -6,8 +6,8 @@ class HabariBox extends Plugin implements MediaSilo
 
 	static $cache = array();
 	
-	private static $key = 'ireesyriot0tfv2';
-	private static $secret = '5o62vg2quv6bl81';
+	private static $key = 'slimassr302930tas2v'; // the app key, replace for yours ;)
+	private static $secret = 'sd552asg5sa'; // the app secret
 	
 	/**
 	 * Find out whether we should show the media silo 
@@ -42,6 +42,13 @@ class HabariBox extends Plugin implements MediaSilo
 	
 	public function action_init()
 	{
+		self::$key = 'Nm80M23FnM3F1UTRibDgx';
+		self::$secret = 'Nm80M1FnM3F1UTRibDgx';
+		self::$key = 'aXJlZXN5cmlvdDV0ZlEy';
+				
+		// $key = 'ireesyriot0tfv2';
+		// private static $secret = '5o62vg2quv6bl81';
+		
 		if( !$this->is_initiated() )
 		{
 			$this->check_posts();
@@ -310,10 +317,15 @@ class HabariBox extends Plugin implements MediaSilo
 				
 		if( !isset( $this->api ) )
 		{
+			$replace = array( '5', '6', '3', '4', 'Q');
+			$search = array( '0', '5', '2', '6', 'v' );
+			
 			$base_dir = $this->get_storage_directory() . '/';
 			$sdk_base = dirname( $this->get_file() ) . '/dropbox-library/Dropbox/';
-			$key = self::$key;
-			$secret = self::$secret;
+			$key = str_replace( $replace, $search, base64_decode( self::$key ) );
+			$secret = str_replace( $replace, $search, base64_decode( self::$secret ) );
+			
+			// Utils::debug( $key, $secret );
 			
 			if( Options::get('habaribox__oauth-token') != null && $create_token == false )
 			{
