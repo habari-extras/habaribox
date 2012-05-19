@@ -45,9 +45,6 @@ class HabariBox extends Plugin implements MediaSilo
 		self::$key = 'Nm80M23FnM3F1UTRibDgx';
 		self::$secret = 'Nm80M1FnM3F1UTRibDgx';
 		self::$key = 'aXJlZXN5cmlvdDV0ZlEy';
-				
-		// $key = 'ireesyriot0tfv2';
-		// private static $secret = '5o62vg2quv6bl81';
 		
 		if( !$this->is_initiated() )
 		{
