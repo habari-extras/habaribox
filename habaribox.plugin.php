@@ -54,6 +54,11 @@ class HabariBox extends Plugin implements MediaSilo
 		$this->evaluate_posts( false );
 		
 		$this->silo_dir( '/Public' );
+		
+		$this->add_rule('"dropbox_list"/directory', 'dropbox_list');
+		
+		$this->add_template('directory_list', dirname(__FILE__) . '/directory_list.php');
+		
 	}
 	
 	public function action_plugin_activation( $file )
@@ -77,6 +82,42 @@ class HabariBox extends Plugin implements MediaSilo
 		
 		$this->api->update_file( $post->slug, $new_content );
 
+	}
+
+	/**
+	 * Handle register_page action
+	 **/
+	public function action_plugin_act_dropbox_list($handler)
+	{
+		
+		$dir = $handler->handler_vars['directory'];
+		
+		switch( $dir )
+		{
+			case 'sila':
+				$path = '/education/sig/SILA/public_documents';
+				break;
+		}
+		
+		if( Cache::has( array( 'habaribox_directories', $dir ) ) )
+		{
+			$files = Cache::get( array( 'habaribox_directories', $dir ) );
+		}
+		else
+		{
+			$files = $this->api->get_directory( $path, false );
+
+			foreach( $files as $name => $file )
+			{
+				$file->link = $this->api->get_link( $file->path );
+			}
+		}
+		
+		Cache::set( array( 'habaribox_directories', $dir ), $files );
+		
+		$handler->theme->files = $files;
+				
+		$handler->theme->display( 'directory_list' );
 	}
 	
 	/**
@@ -104,46 +145,7 @@ class HabariBox extends Plugin implements MediaSilo
 			$form->post_links->append( 'static', 'dropbox_sync', sprintf( _t( 'Synced from Dropbox: %s' ), HabariDateTime::date_create($d_post['meta']->modified)->format() ) );
 		}
 		
-		// Utils::debug( $post->content, $post );
-				
-		// Utils::debug( 'slow' );
-		
-		// $form->content->value = $this->api->get_file_contents( $post->slug );
 	}
-	
-	/**
-	 * Update the Habari post with the Dropbox contents 
-	 * 
-	 * This has been replaced with evaluate_posts()
-	 **/
-	// public function filter_post_content( $content, $post )
-	// {
-	// 	if( !$this->create_api() || $post->id == 0 )
-	// 	{
-	// 		return $content;
-	// 	}
-	// 			
-	// 	// Utils::debug( $post->id );
-	// 	
-	// 	if( Cache::has( array('habaribox', $post->slug ) ) )
-	// 	{
-	// 		return Cache::get( array('habaribox', $post->slug ) );
-	// 	}
-	// 	else
-	// 	{
-	// 		$file_content = $this->api->get_file_contents( $post->slug );
-	// 		Cache::set( array('habaribox', $post->slug ), $file_content );
-	// 	}
-	// 	
-	// 	if( $content != $file_content )
-	// 	{			
-	// 		$content = $file_content;
-	// 		$post->content = $file_content;
-	// 		$post->update();
-	// 	}
-	// 
-	// 	return $content;
-	// }
 	
 	private function update_habari_content( $post )
 	{
