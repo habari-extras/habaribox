@@ -5,7 +5,7 @@
 	
 	<author url="http://morgante.net/">Morgante Pell</author> 
 	<author url="http://habariproject.org/">The Habari Community</author>
-	<version>0.1</version> 
+	<version>0.2</version> 
 	<url>http://lab.morgante.net/habaribox</url> 
 	<description><![CDATA[This plugin allows posts to be synced with Dropbox, providing an easy way to edit them anywhere. It also creates a media silo for Dropbox.]]></description> 
 	<copyright>2012</copyright> 
