@@ -83,6 +83,53 @@ class HabariBox extends Plugin implements MediaSilo
 		$this->api->update_file( $post->slug, $new_content );
 
 	}
+	
+	/**
+	 * Implement the shortcode to publicly list the contents of a directory
+	 */
+	function filter_shortcode_dropbox($content, $code, $attrs, $context)
+	{	
+		$path = $attrs['path'];
+		
+		// deal with a directory list
+		if( isset( $attrs['list'] ) )
+		{
+			
+			if( Cache::has( array( 'habaribox_publiclink', $dir ) ) )
+			{
+				$contents = Cache::get( array( 'habaribox_pathref', $dir ) );
+			}
+
+			else
+			{
+				$files = $this->api->get_directory( $path, false );
+
+				foreach( $files as $name => $file )
+				{
+					$file->link = $this->api->get_link( $file->path );
+				}
+			}
+		}
+		// simply generate a public link
+		else
+		{
+			if( Cache::has( array( 'habaribox_link', $path ) ) )
+			{
+				$link = Cache::get( array( 'habaribox_link', $path ) );
+			}
+			else
+			{
+				$link = $this->api->get_link( $path );
+				
+				Cache::set( array( 'habaribox_link', $path ), $link, (empty($attrs['expiry'])) ? 3600 : $attrs['expiry'] );
+			}
+									
+			return '<a href="' . $link . '">' . ( (empty($context)) ? $link : $context ). '</a>';
+			
+		}
+		
+		// return $this->get_jambo_form( $attrs, $context )->get();
+	}
 
 	/**
 	 * Handle register_page action
@@ -402,7 +449,7 @@ class HabariBox extends Plugin implements MediaSilo
 		
 		$sync = $ui->append( 'checkbox', 'enable-sync', 'habaribox__sync', _t('Enable sync') );
 		$silo = $ui->append( 'checkbox', 'enable-silo', 'habaribox__silo', _t('Enable silo') );
-		
+				
 		$ui->append('submit', 'save', _t('Save'));
 		$ui->out();
 	}
@@ -410,7 +457,7 @@ class HabariBox extends Plugin implements MediaSilo
 	public function action_plugin_ui_authorize()
 	{
 		// echo 'jim';
-		
+				
 		// session_destroy();
 		$this->create_api( true );
 		Session::notice( 'Authorization tokens have been successfully set.' );
