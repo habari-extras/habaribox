@@ -92,7 +92,7 @@ class HabariBox extends Plugin implements MediaSilo
 		$path = $attrs['path'];
 		
 		// deal with a directory list
-		if( isset( $attrs['list'] ) && $attrs['list'] == ( 'true' || '1' ) )
+		if( isset( $attrs['show'] ) && $attrs['show'] == 'list' )
 		{
 			if( Cache::has( array( 'habaribox_dirlist', $path ) ) )
 			{
@@ -129,48 +129,64 @@ class HabariBox extends Plugin implements MediaSilo
 				
 				Cache::set( array( 'habaribox_link', $path ), $link, (empty($attrs['expiry'])) ? 3600 : $attrs['expiry'] );
 			}
+			
+			if( isset( $attrs['show'] ) && $attrs['show'] != 'link' )
+			{
+				if( $attrs['show'] == 'image' || $attrs['show'] == 'imageurl' )
+				{
+					if( Cache::has( array( 'habaribox_image', $path ) ) )
+					{
+						$image = Cache::get( array( 'habaribox_image', $path ) );
+					}
+					else
+					{
+						$request = new RemoteRequest( $link );
+						if( $request->execute() )
+						{
+							$headers = $request->get_response_headers();
+							$image = str_replace( 'www.', 'dl.', $headers['location'] );
+						}
+
+						Cache::set( array( 'habaribox_image', $path ), $image, (empty($attrs['expiry'])) ? 3600 : $attrs['expiry'] );
+					}
+				}
+				elseif( $attrs['show'] == 'thumb' || $attrs['show'] == 'thumburl' )
+				{
+					if( Cache::has( array( 'habaribox_thumbnail', $path ) ) )
+					{
+						$image = Cache::get( array( 'habaribox_thumbnail', $path ) );
+					}
+					else
+					{
+						$image = $this->api->get_thumbnail( $path );
+
+						Cache::set( array( 'habaribox_thumbnail', $path ), $image, (empty($attrs['expiry'])) ? 3600 : $attrs['expiry'] );
+					}
+				}
+				
+				
+				if( $attrs['show'] == 'imageurl' || $attrs['show'] == 'thumburl'  )
+				{
+					// return $image;
+				}
+				else
+				{
+					Utils::debug( $attrs['show'] );
+					
+					return '<a href="' . $link . '"><img src="' . $image . '" alt="' . ( (empty($context)) ? $link : $context ). '" /></a>';
+				}
+				
+			}
+			else
+			{
+				return '<a href="' . $link . '">' . ( (empty($context)) ? $link : $context ). '</a>';
+				
+			}
 									
-			return '<a href="' . $link . '">' . ( (empty($context)) ? $link : $context ). '</a>';
 			
 		}
 		
 		// return $this->get_jambo_form( $attrs, $context )->get();
-	}
-
-	/**
-	 * Handle register_page action
-	 **/
-	public function action_plugin_act_dropbox_list($handler)
-	{
-		
-		$dir = $handler->handler_vars['directory'];
-		
-		switch( $dir )
-		{
-			case 'sila':
-				$path = '/education/sig/SILA/public_documents';
-				break;
-		}
-		
-		if( Cache::has( array( 'habaribox_directories', $dir ) ) )
-		{
-			$files = Cache::get( array( 'habaribox_directories', $dir ) );
-		}
-		else
-		{
-			$files = $this->api->get_directory( $path, false );
-
-			foreach( $files as $name => $file )
-			{
-				$file->link = $this->api->get_link( $file->path );
-			}
-		}
-		
-		Cache::set( array( 'habaribox_directories', $dir ), $files );
-		
-		$handler->theme->files = $files;
-				
-		$handler->theme->display( 'directory_list' );
 	}
 	
 	/**
@@ -518,7 +534,7 @@ class HabariBox extends Plugin implements MediaSilo
 				$results[] = new MediaAsset( self::SILO_NAME . $item->path, true );
 			}
 			else
-			{
+			{				
 				$props = $this->silo_file_properties( $item );
 				
 				$results[] = new MediaAsset(
@@ -541,49 +557,6 @@ class HabariBox extends Plugin implements MediaSilo
 	*/
 	public function silo_get( $path, $qualities = null )
 	{
-		if( !$this->create_api( false, 'silo' ) )
-		{
-			return;
-		}
-		
-		$results = array();
-		
-		$props = array();
-		$props = array_merge( $props, self::element_props( $photo, "http://www.flickr.com/photos/{$_SESSION['nsid']}/{$photo['id']}", $size ) );
-		
-		$props['url'] = "http://google.com";
-		// $props['thumbnail_url'] = "http://farm{$photo['farm']}.static.flickr.com/{$photo['server']}/{$photo['id']}_{$photo['secret']}_m.jpg";
-		// $props['flickr_url'] = $url;
-		// $props['filetype'] = 'flickr';
-		
-		$result = new MediaAsset(
-			self::SILO_NAME . $path,
-			false,
-			$props
-		);
-		
-		return $result;
-		
-		// $flickr = new Flickr();
-		// 	$results = array();
-		// 	$size = Options::get( 'flickrsilo__flickr_size' );
-		// 	list($unused, $photoid) = explode( '/', $path );
-		// 	
-		// 	$xml = $flickr->photosGetInfo($photoid);
-		// 	$photo = $xml->photo;
-		// 
-		// 	$props = array();
-		// 	foreach( $photo->attributes() as $name => $value ) {
-		// 		$props[$name] = (string)$value;
-		// 	}
-		// 	$props = array_merge( $props, self::element_props( $photo, "http://www.flickr.com/photos/{$_SESSION['nsid']}/{$photo['id']}", $size ) );
-		// 	$result = new MediaAsset(
-		// 		self::SILO_NAME . '/photos/' . $photo['id'],
-		// 		false,
-		// 		$props
-		// 	);
-		// 
-		// 	return $result;
 	}
 	
 	private function silo_file_properties( $meta )
@@ -594,21 +567,15 @@ class HabariBox extends Plugin implements MediaSilo
 		$path = pathinfo( $meta->path );
 				
 		// if( $meta->thumb_exists)
-		$props['url'] = $this->silo_url( $meta->path );
+		$props['relpath'] = $meta->path;
+		$props['filetype'] = 'dropbox';
 		
 		if( $meta->thumb_exists )
 		{
 			$props['thumbnail_url'] = $this->silo_thumbnail( $meta->path );
+			$props['filetype'] = 'dropbox_image';
 			
-			if( strpos( $meta->path, '/Public' ) === 0 )
-			{
-				// we can only link to images in Public
-				
-				$props['filetype'] = str_replace( '/', '_', $meta->mime_type);
-
-				// $props['width'] = '50px'; // we should possibly fetch these from server
-				// $props['height'] = '60px'; // we should probably fetch these from server
-			}
+			// print_r( $path );
 			
 		}
 		else
@@ -649,7 +616,8 @@ class HabariBox extends Plugin implements MediaSilo
 		}
 		else
 		{
-			$link = $this->api->get_link( $path );
+			$link = '[dropbox link="false" path=" ' . $path . '"/]';
+			// $link = $this->api->get_link( $path );
 		}
 				
 		return $link;
@@ -784,6 +752,8 @@ class HabariBox extends Plugin implements MediaSilo
 		if ( $silo instanceof $class ) {
 			$controls[] = $this->link_path( self::SILO_NAME . '/Public', _t( 'Public' ) );
 			$controls[] = $this->link_path( self::SILO_NAME . '/' . $path, _t( 'Browse' ) );
+			$controls[] = '<a href="#" onclick="habari.media.output.dropbox.directory_list(\''.$path.'\', true);return false;">' . _t( 'Insert directory list' ) . '</a>';
+			
 			// if ( User::identify()->can( 'upload_media' ) ) {
 			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'upload', _t( 'Upload' ) );
 			// }
@@ -795,6 +765,37 @@ class HabariBox extends Plugin implements MediaSilo
 			// }
 		}
 		return $controls;
+	}
+	
+	public function action_admin_footer( $theme ) 
+	{
+		if ( Controller::get_var( 'page' ) == 'publish' ) {
+
+			echo <<< HABARIBOX
+			<script type="text/javascript">
+				habari.media.output.dropbox = {
+					insert_link: function(fileindex, fileobj) {
+						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '"]' + fileobj.title + '[/dropbox]');
+					},
+					insert_thumbnail: function(fileindex, fileobj) {
+						console.log( fileobj );
+						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '"]<img src="' + fileobj.thumbnail_url + '" alt="' + fileobj.title + '" />[/dropbox]');
+					}
+				},
+				habari.media.output.dropbox_image = {
+					insert_thumbnail: function(fileindex, fileobj) {
+						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '" show="thumb"/]');
+					},
+					insert_image: function(fileindex, fileobj) {
+						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '" show="image"/]');
+					},
+					insert_imageurl: function(fileindex, fileobj) {
+						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '" show="imageurl"/]');
+					}
+				}
+			</script>
+HABARIBOX;
+		}
 	}
 
 	private function is_auth()
@@ -951,6 +952,7 @@ class DropboxAPI
 	
 	public function get_thumbnail($file, $format = 'JPEG', $size = 'large')
 	{
+		
 		$response = $this->dropbox->thumbnails( $file, $format, $size );
 		
 		$url = "data:" . str_replace( ' ', '', $response['mime'] ) . ";base64," . base64_encode( $response['data'] );
@@ -970,18 +972,20 @@ class DropboxAPI
 	
 	public function get_link($file)
 	{
+		print_r( 'bad boy' );
+		
 		$response = $this->dropbox->shares($file);
 		
 		return $response['body']->url;
 	}
-	
+		
 	public function get_token( $type = 'access_token' )
 	{
 		return $this->storage->get( $type );
 	}
 	
 	public function get_public_link( $path )
-	{
+	{		
 		return 'http://dl.dropbox.com/u/' . Options::get( 'habaribox__oauth-uid' ) . '/' . substr( $path, 8);
 	}
 	
