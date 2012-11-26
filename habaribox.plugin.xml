@@ -16,12 +16,17 @@
 			<p>Please note that this feature is experimental and you should make a backup of your site before enabling it.</p>
 			<p>When syncing is enabled, this plugin will attempt to keep a synced copy of your Habari posts in Habari. They will exist in a folder resembling your blog name existing at the root of your Dropbox. When you update or create a post, it will update or create a <code>slug.html</code> file in your Dropbox folder. Similarly, when you edit or create the html files in your blog folder on Dropbox, it will update or create the Habari posts.</p>
 			<h2>Silo</h2>
-			<p>When the silo is enabled, it will add a new silo to the post page. This silo will allow you to browse your Dropbox folder and insert links to files. Links to files in your Public directory will be linked to directly, which is good for images, while others will pass through Dropbox's interface.</p>
-			<p>There is also a filter which can be used to reference files from your Public directory.</p>
+			<p>When the silo is enabled, it will add a new silo to the post page. This silo will allow you to browse your Dropbox folder and insert links to files. You can also use it to embed photos from your Dropbox into your page.</p>
+			<h2>Shortcode</h2>
+			<p>You can use the shortcode <code>[dropbox]</code> to reference files from your dropbox. These shortcodes can be inserted via the silo.</p>
 			<ul>
-				<li><code>&lt;dP=slim.txt&gt;</code> will be replaced with <code>http://dropbox.com/u/#/slim.txt</code> (the filename of the Public file on Dropbox's server)</li>
-				<li><code>&lt;diP=slim.jpg&gt;</code> will be replaced with <code>&lt;img src="http://dropbox.com/u/#/slim.jpg"&gt;</code> (an image referencing the Public file on Dropbox)</li>
-				<li><code>&lt;daP=slim.html&gt;</code> will be replaced with <code>&lt;a href="http://dropbox.com/u/#/slim.jpg"&gt;</code> (a link to the Public file on Dropbox)</li>
+				<li><code>[dropbox path="/education/report.txt"]Report[/dropbox]</code> will link to <em>report.txt</em> in your Dropbox.</li>
+				<li><code>[dropbox path="/education/image.png" show="url"/]</code> will be replaced with the shareable url of <em>report.txt</em>.</li>
+				<li><code>[dropbox path="/education" show="list"/]</code> will create a clickable list of every file in the education directory, <strong>exposing them all to the world</strong>.</li>
+				<li><code>[dropbox path="/education/image.png" show="image"/]</code> will embed <em>image.png</em> in the post.</li>
+				<li><code>[dropbox path="/education/image.png" show="imageurl"/]</code> will be replaced with the image's url.</li>
+				<li><code>[dropbox path="/education/image.png" show="thumb"]Click for full[/dropbox]</code> will embed a thumbnail of <em>image.png</em> in the post.</li>
+				<li><code>[dropbox path="/education/image.png" show="thumburl"/]</code> will be replaced with the thumbnail's url.</li>
 			</ul>
 		]]></value>
 	</help>

@@ -175,6 +175,11 @@ class HabariBox extends Plugin implements MediaSilo
 				}
 				
 			}
+			elseif( isset( $attrs['show'] ) && $attrs['show'] == 'url' )
+			{
+				return $link;
+				
+			}
 			else
 			{
 				return '<a href="' . $link . '">' . ( (empty($context)) ? $link : $context ). '</a>';
@@ -184,7 +189,6 @@ class HabariBox extends Plugin implements MediaSilo
 			
 		}
 		
-		// return $this->get_jambo_form( $attrs, $context )->get();
 	}
 	
 	/**
@@ -429,6 +433,7 @@ class HabariBox extends Plugin implements MediaSilo
 	}
 	
 	/**
+	 * THIS HAS BEEN REPLACED WITH A SHORTCODE
 	 * Filter post content to replace links for Dropbox Public files
 	 *
 	 * For file * in the public directory, with public link #:
