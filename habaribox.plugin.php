@@ -92,27 +92,33 @@ class HabariBox extends Plugin implements MediaSilo
 		$path = $attrs['path'];
 		
 		// deal with a directory list
-		if( isset( $attrs['list'] ) )
+		if( isset( $attrs['list'] ) && $attrs['list'] == ( 'true' || '1' ) )
 		{
-			
-			if( Cache::has( array( 'habaribox_publiclink', $dir ) ) )
+			if( Cache::has( array( 'habaribox_dirlist', $path ) ) )
 			{
-				$contents = Cache::get( array( 'habaribox_pathref', $dir ) );
+				$files = Cache::get( array( 'habaribox_dirlist', $path ) );
 			}
-
 			else
 			{
 				$files = $this->api->get_directory( $path, false );
-
+			
 				foreach( $files as $name => $file )
 				{
 					$file->link = $this->api->get_link( $file->path );
 				}
+				
+				Cache::set( array( 'habaribox_dirlist', $path ), $files, (empty($attrs['expiry'])) ? 3600 : $attrs['expiry'] );
+				
 			}
+			
+			$theme = Themes::create();
+			$theme->assign('files', $files);
+						
+			return $theme->fetch('directory_list');
 		}
 		// simply generate a public link
 		else
-		{
+		{			
 			if( Cache::has( array( 'habaribox_link', $path ) ) )
 			{
 				$link = Cache::get( array( 'habaribox_link', $path ) );
