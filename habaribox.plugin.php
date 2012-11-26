@@ -170,9 +170,7 @@ class HabariBox extends Plugin implements MediaSilo
 					// return $image;
 				}
 				else
-				{
-					Utils::debug( $attrs['show'] );
-					
+				{					
 					return '<a href="' . $link . '"><img src="' . $image . '" alt="' . ( (empty($context)) ? $link : $context ). '" /></a>';
 				}
 				
@@ -752,7 +750,7 @@ class HabariBox extends Plugin implements MediaSilo
 		if ( $silo instanceof $class ) {
 			$controls[] = $this->link_path( self::SILO_NAME . '/Public', _t( 'Public' ) );
 			$controls[] = $this->link_path( self::SILO_NAME . '/' . $path, _t( 'Browse' ) );
-			$controls[] = '<a href="#" onclick="habari.media.output.dropbox.directory_list(\''.$path.'\', true);return false;">' . _t( 'Insert directory list' ) . '</a>';
+			$controls[] = '<a href="#" onclick="habari.media.insert_list_dropbox_directory(\''.$path.'\');return false;">' . _t( 'Insert directory list' ) . '</a>';
 			
 			// if ( User::identify()->can( 'upload_media' ) ) {
 			// 	$controls[] = $this->link_panel( self::SILO_NAME . '/' . $path, 'upload', _t( 'Upload' ) );
@@ -781,7 +779,7 @@ class HabariBox extends Plugin implements MediaSilo
 						console.log( fileobj );
 						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '"]<img src="' + fileobj.thumbnail_url + '" alt="' + fileobj.title + '" />[/dropbox]');
 					}
-				},
+				}
 				habari.media.output.dropbox_image = {
 					insert_thumbnail: function(fileindex, fileobj) {
 						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '" show="thumb"/]');
@@ -792,6 +790,9 @@ class HabariBox extends Plugin implements MediaSilo
 					insert_imageurl: function(fileindex, fileobj) {
 						habari.editor.insertSelection('[dropbox path="' + fileobj.relpath + '" show="imageurl"/]');
 					}
+				}
+				habari.media.insert_list_dropbox_directory = function( path ) {
+					habari.editor.insertSelection('[dropbox path="/' + path + '" show="list"/]');
 				}
 			</script>
 HABARIBOX;
@@ -972,8 +973,6 @@ class DropboxAPI
 	
 	public function get_link($file)
 	{
-		print_r( 'bad boy' );
-		
 		$response = $this->dropbox->shares($file);
 		
 		return $response['body']->url;
